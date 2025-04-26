@@ -1,0 +1,339 @@
+import React, { useEffect, useRef, useState } from 'react';
+import * as d3 from 'd3';
+
+// Types for nodes and links
+type Node = {
+  id: string;
+  label: string;
+  x?: number;
+  y?: number;
+};
+
+type Link = {
+  source: string;
+  target: string;
+};
+
+type GraphData = {
+  nodes: Node[];
+  links: Link[];
+};
+
+// Sample data - you can replace this with your actual data
+const initialData: GraphData = {
+  nodes: [
+    { id: '1', label: 'Task 1' },
+    { id: '2', label: 'Task 2' },
+    { id: '3', label: 'Task 3' },
+    { id: '4', label: 'Task 4' },
+    { id: '5', label: 'Task 5' },
+    { id: '6', label: 'Task 6' }
+  ],
+  links: [
+    { source: '1', target: '2' },
+    { source: '1', target: '3' },
+    { source: '2', target: '4' },
+    { source: '3', target: '5' },
+    { source: '4', target: '6' },
+    { source: '5', target: '6' }
+  ]
+};
+
+const DagVisualization = () => {
+  const svgRef = useRef<SVGSVGElement>(null);
+  const [data, setData] = useState<GraphData>(initialData);
+  const [selectedNode, setSelectedNode] = useState<string | null>(null);
+  const [editLabel, setEditLabel] = useState('');
+  const [showNodeForm, setShowNodeForm] = useState(false);
+  const [newNodeLabel, setNewNodeLabel] = useState('');
+
+  // Initialize the graph
+  useEffect(() => {
+    if (!svgRef.current) return;
+
+    const width = 800;
+    const height = 600;
+    const svg = d3.select(svgRef.current);
+
+    // Clear SVG
+    svg.selectAll('*').remove();
+
+    // Create the main group element
+    const g = svg.append('g');
+
+    // Create zoom behavior
+    const zoom = d3.zoom()
+      .scaleExtent([0.1, 4])
+      .on('zoom', (event) => {
+        g.attr('transform', event.transform);
+      });
+
+    svg.call(zoom as any);
+
+    // Initialize force simulation
+    const simulation = d3.forceSimulation()
+      .force('link', d3.forceLink().id((d: any) => d.id).distance(100))
+      .force('charge', d3.forceManyBody().strength(-300))
+      .force('center', d3.forceCenter(width / 2, height / 2))
+      .force('x', d3.forceX(width / 2).strength(0.1))
+      .force('y', d3.forceY(height / 2).strength(0.1));
+
+    // Create links
+    const link = g.append('g')
+      .attr('class', 'links')
+      .selectAll('line')
+      .data(data.links)
+      .enter()
+      .append('line')
+      .attr('stroke', '#999')
+      .attr('stroke-opacity', 0.6)
+      .attr('stroke-width', 2)
+      .attr('marker-end', 'url(#arrowhead)');
+
+    // Create arrowhead marker
+    svg.append('defs').append('marker')
+      .attr('id', 'arrowhead')
+      .attr('viewBox', '0 -5 10 10')
+      .attr('refX', 20)
+      .attr('refY', 0)
+      .attr('orient', 'auto')
+      .attr('markerWidth', 6)
+      .attr('markerHeight', 6)
+      .append('path')
+      .attr('d', 'M0,-5L10,0L0,5')
+      .attr('fill', '#999');
+
+    // Create nodes
+    const node = g.append('g')
+      .attr('class', 'nodes')
+      .selectAll('.node')
+      .data(data.nodes)
+      .enter()
+      .append('g')
+      .attr('class', 'node')
+      .call(d3.drag()
+        .on('start', dragStarted)
+        .on('drag', dragged)
+        .on('end', dragEnded) as any);
+
+    // Add node circles
+    node.append('circle')
+      .attr('r', 20)
+      .attr('fill', '#4299e1')
+      .attr('stroke', '#2b6cb0')
+      .attr('stroke-width', 2)
+      .on('click', (event, d: any) => {
+        event.stopPropagation();
+        setSelectedNode(d.id);
+        setEditLabel(d.label);
+      });
+
+    // Add node labels
+    node.append('text')
+      .attr('dy', 30)
+      .attr('text-anchor', 'middle')
+      .text((d: any) => d.label)
+      .attr('fill', '#2d3748')
+      .attr('font-size', '12px');
+
+    // Update simulation nodes and links
+    simulation.nodes(data.nodes as any);
+    (simulation.force('link') as d3.ForceLink<any, any>).links(data.links as any);
+
+    // Simulation tick function
+    simulation.on('tick', () => {
+      link
+        .attr('x1', (d: any) => d.source.x)
+        .attr('y1', (d: any) => d.source.y)
+        .attr('x2', (d: any) => d.target.x)
+        .attr('y2', (d: any) => d.target.y);
+
+      node
+        .attr('transform', (d: any) => `translate(${d.x},${d.y})`);
+    });
+
+    // Drag functions
+    function dragStarted(event: any, d: any) {
+      if (!event.active) simulation.alphaTarget(0.3).restart();
+      d.fx = d.x;
+      d.fy = d.y;
+    }
+
+    function dragged(event: any, d: any) {
+      d.fx = event.x;
+      d.fy = event.y;
+    }
+
+    function dragEnded(event: any, d: any) {
+      if (!event.active) simulation.alphaTarget(0);
+      // Store positions but don't reset fx/fy to allow positions to stay fixed
+    }
+
+    // Clear selection when clicking on the SVG background
+    svg.on('click', () => {
+      setSelectedNode(null);
+    });
+
+    return () => {
+      simulation.stop();
+    };
+  }, [data]);
+
+  // Add a new node
+  const addNode = () => {
+    if (!newNodeLabel.trim()) return;
+    
+    const newId = (Math.max(...data.nodes.map(n => parseInt(n.id))) + 1).toString();
+    
+    setData({
+      nodes: [...data.nodes, { id: newId, label: newNodeLabel }],
+      links: [...data.links]
+    });
+    
+    setNewNodeLabel('');
+    setShowNodeForm(false);
+  };
+
+  // Update a node's label
+  const updateNodeLabel = () => {
+    if (!selectedNode || !editLabel.trim()) return;
+    
+    setData({
+      nodes: data.nodes.map(node => 
+        node.id === selectedNode ? { ...node, label: editLabel } : node
+      ),
+      links: [...data.links]
+    });
+    
+    setSelectedNode(null);
+  };
+
+  // Delete a node
+  const deleteNode = () => {
+    if (!selectedNode) return;
+    
+    setData({
+      nodes: data.nodes.filter(node => node.id !== selectedNode),
+      links: data.links.filter(link => 
+        link.source !== selectedNode && link.target !== selectedNode
+      )
+    });
+    
+    setSelectedNode(null);
+  };
+
+  // Add a link between nodes
+  const addLink = (source: string, target: string) => {
+    // Check if link already exists
+    const linkExists = data.links.some(
+      link => link.source === source && link.target === target
+    );
+    
+    if (linkExists) return;
+    
+    setData({
+      nodes: [...data.nodes],
+      links: [...data.links, { source, target }]
+    });
+  };
+
+  return (
+    <div className="flex flex-col h-screen bg-gray-100">
+      <div className="p-4 bg-white shadow">
+        <h1 className="text-2xl font-bold text-gray-800">DAG Visualization</h1>
+        <div className="flex mt-2">
+          <button 
+            onClick={() => setShowNodeForm(true)}
+            className="px-4 py-2 mr-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Add Node
+          </button>
+        </div>
+      </div>
+      
+      <div className="flex flex-1 overflow-hidden">
+        <div className="flex-1 overflow-auto">
+          <svg 
+            ref={svgRef} 
+            width="100%" 
+            height="100%" 
+            className="border border-gray-200"
+          />
+        </div>
+        
+        <div className="w-64 p-4 bg-white shadow-lg">
+          <h2 className="text-lg font-semibold mb-4">Properties</h2>
+          
+          {showNodeForm ? (
+            <div className="mb-4 p-3 border rounded bg-gray-50">
+              <h3 className="font-medium mb-2">Add New Node</h3>
+              <input
+                type="text"
+                value={newNodeLabel}
+                onChange={(e) => setNewNodeLabel(e.target.value)}
+                className="w-full p-2 mb-2 border rounded"
+                placeholder="Node Label"
+              />
+              <div className="flex justify-between">
+                <button 
+                  onClick={addNode}
+                  className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
+                >
+                  Add
+                </button>
+                <button 
+                  onClick={() => setShowNodeForm(false)}
+                  className="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : null}
+          
+          {selectedNode ? (
+            <div className="p-3 border rounded bg-gray-50">
+              <h3 className="font-medium mb-2">Edit Node</h3>
+              <p className="text-sm text-gray-600 mb-2">ID: {selectedNode}</p>
+              <input
+                type="text"
+                value={editLabel}
+                onChange={(e) => setEditLabel(e.target.value)}
+                className="w-full p-2 mb-2 border rounded"
+                placeholder="Node Label"
+              />
+              <div className="flex justify-between">
+                <button 
+                  onClick={updateNodeLabel}
+                  className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                >
+                  Update
+                </button>
+                <button 
+                  onClick={deleteNode}
+                  className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          ) : (
+            <p className="text-gray-500 italic">Select a node to edit its properties</p>
+          )}
+          
+          <div className="mt-4">
+            <h3 className="font-medium mb-2">Instructions</h3>
+            <ul className="text-sm text-gray-600 space-y-1">
+              <li>• Drag nodes to reposition</li>
+              <li>• Click on a node to select it</li>
+              <li>• Scroll to zoom in/out</li>
+              <li>• Click and drag the background to pan</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default DagVisualization;
