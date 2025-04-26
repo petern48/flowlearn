@@ -88,7 +88,7 @@ def generate_graph_with_llm(topic: str) -> GraphData:
     
     try:
         # Initialize the model
-        model = genai.GenerativeModel('gemini-pro')
+        model = genai.GenerativeModel('gemini-2.0-flash')
         
         # Generate content
         response = model.generate_content(prompt)

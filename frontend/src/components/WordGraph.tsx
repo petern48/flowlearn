@@ -31,15 +31,30 @@ const ExpandedNode = ({ data }: { data: { label: string; summary: string; descri
   );
 };
 
-const WordNode = ({ data }: { data: { label: string} }) => {
-    return (
-      <div className="px-4 py-2 shadow-md rounded-md bg-white border-2 border-blue-500">
-        <div className="flex flex-col">
-          <div className="font-bold">{data.label}</div>
-        </div>
+// Custom node component with clickable styling
+const WordNode = ({ data, selected }: { data: { label: string; summary: string }; selected: boolean }) => {
+  const [isHovered, setIsHovered] = useState(false);
+  
+  return (
+    <div 
+      className={`px-4 py-2 shadow-md rounded-md bg-white border-2 ${selected ? 'border-red-500' : isHovered ? 'border-green-500' : 'border-blue-500'} cursor-pointer hover:bg-blue-50 transition-colors`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      style={{
+        transform: isHovered ? 'scale(1.05)' : 'scale(1)',
+        transition: 'transform 0.2s ease-in-out',
+        boxShadow: isHovered ? '0 4px 12px rgba(0, 0, 0, 0.15)' : '0 2px 6px rgba(0, 0, 0, 0.1)',
+      }}
+    >
+      <div className="flex flex-col">
+        <div className="font-bold">{data.label}</div>
+        {isHovered && (
+          <div className="text-xs text-gray-500 mt-1">{data.summary?.substring(0, 60)}...</div>
+        )}
       </div>
-    );
-  };
+    </div>
+  );
+};
 
 // Custom edge component with hover tooltip
 const RelationshipEdge = ({ 
@@ -54,6 +69,9 @@ const RelationshipEdge = ({
   data,
   markerEnd,
 }: EdgeProps) => {
+  const [isHovered, setIsHovered] = useState(false);
+  const edgeRef = React.useRef<SVGPathElement>(null);
+
   const [edgePath, labelX, labelY] = getStraightPath({
     sourceX,
     sourceY,
@@ -61,18 +79,38 @@ const RelationshipEdge = ({
     targetY,
   });
 
-  const [isHovered, setIsHovered] = useState(false);
+  // Add mouseenter/mouseleave listeners with a small delay
+  useEffect(() => {
+    const handleMouseEnter = () => setIsHovered(true);
+    const handleMouseLeave = () => setIsHovered(false);
+    
+    const currentEdge = edgeRef.current;
+    if (currentEdge) {
+      currentEdge.addEventListener('mouseenter', handleMouseEnter);
+      currentEdge.addEventListener('mouseleave', handleMouseLeave);
+    }
+    
+    return () => {
+      if (currentEdge) {
+        currentEdge.removeEventListener('mouseenter', handleMouseEnter);
+        currentEdge.removeEventListener('mouseleave', handleMouseLeave);
+      }
+    };
+  }, []);
 
   return (
     <>
       <path
+        ref={edgeRef}
         id={id}
-        style={style}
+        style={{
+          ...style, 
+          strokeWidth: 5,
+          cursor: 'pointer',
+        }}
         className="react-flow__edge-path"
         d={edgePath}
         markerEnd={markerEnd}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
       />
       {isHovered && data?.explanation && (
         <EdgeLabelRenderer>
@@ -84,9 +122,11 @@ const RelationshipEdge = ({
               padding: '6px 10px',
               borderRadius: '4px',
               fontSize: '12px',
-              boxShadow: '0 0 10px rgba(14, 13, 13, 0.1)',
+              fontWeight: 'bold',
+              boxShadow: '0 0 10px rgba(0, 0, 0, 0.3)',
               pointerEvents: 'none',
               zIndex: 1000,
+              border: '1px solid #3b82f6',
             }}
             className="nodrag nopan"
           >
@@ -156,7 +196,7 @@ const WordGraph = () => {
   const [topic, setTopic] = useState('Technology');
 
   const nodeTypes = {
-    wordNode: WordNode,
+    WordNode: WordNode,
   };
   
   const edgeTypes = {
