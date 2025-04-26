@@ -17,16 +17,29 @@ import 'reactflow/dist/style.css';
 const BACKEND_HOST = "http://localhost:8000";
 
 // Custom node component
-const WordNode = ({ data }: { data: { label: string; summary: string } }) => {
+const ExpandedNode = ({ data }: { data: { label: string; summary: string; description: string; relatedTopics: string[]; examples: string[] } }) => {
   return (
     <div className="px-4 py-2 shadow-md rounded-md bg-white border-2 border-blue-500">
       <div className="flex flex-col">
         <div className="font-bold">{data.label}</div>
         <div className="text-sm text-gray-500">{data.summary}</div>
+        <div className="text-sm text-gray-500">{data.description}</div>
+        <div className="text-sm text-gray-500">{data.relatedTopics.join(', ')}</div>
+        <div className="text-sm text-gray-500">{data.examples.join(', ')}</div>
       </div>
     </div>
   );
 };
+
+const WordNode = ({ data }: { data: { label: string} }) => {
+    return (
+      <div className="px-4 py-2 shadow-md rounded-md bg-white border-2 border-blue-500">
+        <div className="flex flex-col">
+          <div className="font-bold">{data.label}</div>
+        </div>
+      </div>
+    );
+  };
 
 // Custom edge component with hover tooltip
 const RelationshipEdge = ({ 
@@ -71,7 +84,7 @@ const RelationshipEdge = ({
               padding: '6px 10px',
               borderRadius: '4px',
               fontSize: '12px',
-              boxShadow: '0 0 10px rgba(0, 0, 0, 0.1)',
+              boxShadow: '0 0 10px rgba(14, 13, 13, 0.1)',
               pointerEvents: 'none',
               zIndex: 1000,
             }}
