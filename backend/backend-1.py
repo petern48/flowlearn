@@ -87,20 +87,10 @@ def generate_graph_with_llm(topic: str) -> GraphData:
     """
     
     try:
-        # # Call the LLM (OpenAI's GPT in this example)
-        # response = openai.ChatCompletion.create(
-        #     model="gpt-4",  # Use the appropriate model for your needs
-        #     messages=[
-        #         {"role": "system", "content": "You are a DAG generation assistant that outputs valid JSON."},
-        #         {"role": "user", "content": prompt}
-        #     ],
-        #     temperature=0.7,
-        #     max_tokens=1000
-        # )
-        
         # # Extract and parse the JSON response
         # result_text = response.choices[0].message.content.strip()
 
+        # DOESN'T WORK PROPERLY
         model = genai.GenerativeModel('gemini-pro')
         response = model.generate_content([
             genai.types.Content(
@@ -140,7 +130,9 @@ def generate_graph_with_llm(topic: str) -> GraphData:
     except Exception as e:
         print(f"Error generating graph with LLM: {e}")
         # Return a fallback simple graph
-        return generate_fallback_graph(topic)
+        # return generate_fallback_graph(topic)
+        raise Exception("failed to generate graph")
+        # return {"failed": "Failed"}
 
 def generate_fallback_graph(topic: str) -> GraphData:
     """Generate a simple fallback graph if the LLM fails"""
