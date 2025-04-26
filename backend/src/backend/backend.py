@@ -10,7 +10,7 @@ app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
 # Configure your LLM provider
-genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))  # "your_api_key_here"
+genai.configure(api_key=os.environ.get("AIzaSyDhir02NpWjE4LcokbTwYjV8w2XsvxCK4s"))
 
 # Types for our graph data
 class Node:
@@ -87,22 +87,13 @@ def generate_graph_with_llm(topic: str) -> GraphData:
     """
     
     try:
-        # # Extract and parse the JSON response
-        # result_text = response.choices[0].message.content.strip()
-
-        # DOESN'T WORK PROPERLY
+        # Initialize the model
         model = genai.GenerativeModel('gemini-pro')
-        response = model.generate_content([
-            genai.types.Content(
-                parts=[genai.types.Part(text="You are a DAG generation assistant that outputs valid JSON.")]
-            ),
-            genai.types.Content(
-                parts=[genai.types.Part(text=prompt)]
-            )
-        ], generation_config=genai.types.GenerationConfig(
-            temperature=0.7,
-            max_output_tokens=1000
-        ))
+        
+        # Generate content
+        response = model.generate_content(prompt)
+        if not response.text:
+            raise ValueError("Empty response from Gemini")
         
         # Extract and parse the JSON response
         result_text = response.text.strip()
@@ -117,9 +108,15 @@ def generate_graph_with_llm(topic: str) -> GraphData:
             json_match = re.search(r'({.*})', result_text, re.DOTALL)
             if json_match:
                 result_text = json_match.group(1)
+            else:
+                raise ValueError("Could not find JSON in response")
         
         # Parse the JSON
         data = json.loads(result_text)
+        
+        # Validate the data structure
+        if not isinstance(data, dict) or 'nodes' not in data or 'links' not in data:
+            raise ValueError("Invalid JSON structure")
         
         # Convert to our data classes
         nodes = [Node(n["id"], n["label"]) for n in data["nodes"]]
@@ -130,9 +127,7 @@ def generate_graph_with_llm(topic: str) -> GraphData:
     except Exception as e:
         print(f"Error generating graph with LLM: {e}")
         # Return a fallback simple graph
-        # return generate_fallback_graph(topic)
-        raise Exception("failed to generate graph")
-        # return {"failed": "Failed"}
+        return generate_fallback_graph(topic)
 
 def generate_fallback_graph(topic: str) -> GraphData:
     """Generate a simple fallback graph if the LLM fails"""

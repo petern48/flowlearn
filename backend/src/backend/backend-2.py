@@ -10,7 +10,7 @@ CORS(app)  # Enable CORS for all routes
 
 # Configure Gemini API - in a production environment, use proper env variables
 # Replace with your actual API key
-genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
+genai.configure(api_key=os.environ.get("AIzaSyDhir02NpWjE4LcokbTwYjV8w2XsvxCK4s"))
 
 @app.route('/api/dag/generate', methods=['POST'])
 def generate_dag():
@@ -22,6 +22,8 @@ def generate_dag():
         
         # Call Gemini API to generate DAG structure
         # TODO: This isn't working properly. it throws an error for some reason.
+        #i believe this has to do with our call of the .Content() function, as it does not yet exist.
+        # i switched back to using backend.py 2 
         model = genai.GenerativeModel('gemini-pro')
         response = model.generate_content([
             genai.types.Content(
