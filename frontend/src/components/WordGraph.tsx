@@ -13,8 +13,50 @@ import ReactFlow, {
   EdgeProps,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
+import dagre from 'dagre';
 
 const BACKEND_HOST = "http://localhost:8000";
+
+// Helper function to create a dagre graph and position nodes
+const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'LR') => {
+  const dagreGraph = new dagre.graphlib.Graph();
+  dagreGraph.setDefaultEdgeLabel(() => ({}));
+  
+  // Set direction for layout algorithm
+  // LR = left to right, TB = top to bottom
+  const isHorizontal = direction === 'LR';
+  dagreGraph.setGraph({ rankdir: direction });
+
+  // Add nodes to dagre graph with their dimensions
+  nodes.forEach((node) => {
+    dagreGraph.setNode(node.id, { width: 172, height: 36 });
+  });
+
+  // Add edges to dagre graph
+  edges.forEach((edge) => {
+    dagreGraph.setEdge(edge.source, edge.target);
+  });
+
+  // Calculate layout
+  dagre.layout(dagreGraph);
+
+  // Get positions for nodes
+  const layoutedNodes = nodes.map((node) => {
+    const nodeWithPosition = dagreGraph.node(node.id);
+    
+    return {
+      ...node,
+      targetPosition: isHorizontal ? Position.Left : Position.Top,
+      sourcePosition: isHorizontal ? Position.Right : Position.Bottom,
+      position: {
+        x: nodeWithPosition.x - 86,
+        y: nodeWithPosition.y - 18,
+      },
+    };
+  });
+
+  return { layoutedNodes, layoutedEdges: edges };
+};
 
 // Custom node component
 const ExpandedNode = ({ data }: { data: { label: string; summary: string; description: string; relatedTopics: string[]; examples: string[] } }) => {
@@ -265,17 +307,15 @@ const WordGraph = () => {
         type: 'relationship',
       }));
       
-      // Apply a force-directed layout (simulated here with positioning)
-      const processedNodes = data.nodes.map((node: Node, index: number) => ({
-        ...node,
-        position: {
-          x: 250 + Math.cos(index * (2 * Math.PI / data.nodes.length)) * 300,
-          y: 250 + Math.sin(index * (2 * Math.PI / data.nodes.length)) * 300,
-        },
-      }));
+      // Apply dagre layout instead of circular layout
+      const result = getLayoutedElements(
+        data.nodes,
+        processedEdges,
+        'LR' // Left to right direction
+      );
       
-      setNodes(processedNodes);
-      setEdges(processedEdges);
+      setNodes(result.layoutedNodes);
+      setEdges(result.layoutedEdges);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -375,6 +415,7 @@ const WordGraph = () => {
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           fitView
+          fitViewOptions={{ padding: 0.2 }}
           attributionPosition="bottom-right"
         >
           <Controls />

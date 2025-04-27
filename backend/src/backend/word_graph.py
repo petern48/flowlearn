@@ -68,6 +68,7 @@ def generate_word_graph():
         The values of these should EXACTLY match a corresponding "task" value in another node.
         Everything should eventually lead to one final node, indicating the goal.
 
+        Requirements of the graph: All nodes should be connected. There should be one final node as the goal.
         When there are multiple ways to do something, indicate so by making the paths diverage, to form a DAG that's not a straight line.
 
         Here is the problem:
