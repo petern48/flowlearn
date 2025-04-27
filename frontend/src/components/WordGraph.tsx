@@ -36,7 +36,7 @@ const COLORS = {
 };
 
 // Helper function to estimate text width
-const estimateTextWidth = (text: string, fontSize = 16, fontWeight = 500): number => {
+const estimateTextWidth = (text: string, fontSize = 16): number => {
   // A more precise estimate: adjust character widths based on font
   const charWidths: {[key: string]: number} = {
     'i': 0.3, 'l': 0.3, 'I': 0.3, 'j': 0.35, 'f': 0.35, 't': 0.4, 'r': 0.4,
