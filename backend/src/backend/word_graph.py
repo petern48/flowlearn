@@ -72,6 +72,7 @@ def generate_word_graph():
         When there are multiple ways to do something, indicate so by making the paths diverage, to form a DAG that's not a straight line.
         Prefer to avoid just a single straight line of nodes when possible.
         Try to target around 5-10 nodes for most goals.
+        Node names should be concepts instead of actions.
 
         Important Requirements:
         1. Make sure it's a valid DAG (no cycles)
