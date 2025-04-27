@@ -70,6 +70,7 @@ def generate_word_graph():
         Requirements of the graph: All nodes must be connected. All nodes must eventually lead to one final node, indicating the goal.
         When there are multiple ways to do something, indicate so by making the paths diverage, to form a DAG that's not a straight line.
         Prefer to avoid just a single straight line of nodes when possible.
+        Try to target around 5-10 nodes for most goals.
 
         Here is the problem:
         {topic}
@@ -151,9 +152,8 @@ def generate_word_graph():
                 'source': corr['source'],
                 'target': corr['target'],
                 'animated': True,
-                'type': 'smoothstep',  # didn't change it for some reason
-                'label': 'smoothstep',
-                'style': {'stroke': '#3b82f6', 'strokeWidth': 2},
+                'type': 'smoothstep',
+                # 'style': {'stroke': '#3b82f6', 'strokeWidth': 2},
                 'data': {'explanation': corr['explanation']}
             }
             for i, corr in enumerate(correlations)

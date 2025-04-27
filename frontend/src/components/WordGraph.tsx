@@ -12,6 +12,7 @@ import ReactFlow, {
   getStraightPath,
   EdgeProps,
 } from 'reactflow';
+import { MarkerType } from 'reactflow';
 import 'reactflow/dist/style.css';
 import dagre from 'dagre';
 
@@ -305,7 +306,16 @@ const WordGraph = () => {
       // Process the edges to add the custom type
       const processedEdges = data.edges.map((edge: Edge) => ({
         ...edge,
-        type: 'relationship',
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          width: 20,
+          height: 20,
+          color: '#FF0072',
+          },
+          style: {
+            strokeWidth: 2,
+            stroke: '#FF0072',
+          },
       }));
       
       // Apply dagre layout instead of circular layout
