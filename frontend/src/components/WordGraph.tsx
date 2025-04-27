@@ -7,6 +7,7 @@ import ReactFlow, {
   MiniMap,
   useNodesState,
   useEdgesState,
+  Handle,
   Position,
   EdgeLabelRenderer,
   getStraightPath,
@@ -34,6 +35,25 @@ const COLORS = {
   nodeGlow: 'rgba(167, 196, 188, 0.4)',
 };
 
+// Helper function to estimate text width
+const estimateTextWidth = (text: string, fontSize = 16, fontWeight = 500): number => {
+  // A rough estimate: average char is ~0.6em wide, for a medium weight font
+  // Use multipliers for different characters
+  const charWidths: {[key: string]: number} = {
+    'i': 0.3, 'l': 0.3, 'I': 0.3, 'j': 0.35, 'f': 0.35, 't': 0.4, 'r': 0.4,
+    'm': 1.0, 'w': 1.0, 'M': 1.1, 'W': 1.1,
+  };
+  
+  // Calculate the width
+  let width = 0;
+  for (const char of text) {
+    width += (charWidths[char] || 0.6);
+  }
+  
+  // Convert em to pixels based on font size and add padding
+  return width * fontSize + 60; // Add fixed padding for node
+};
+
 // Helper function to create a dagre graph and position nodes
 const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'LR') => {
   const dagreGraph = new dagre.graphlib.Graph();
@@ -42,11 +62,21 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'LR') => 
   // Set direction for layout algorithm
   // LR = left to right, TB = top to bottom
   const isHorizontal = direction === 'LR';
-  dagreGraph.setGraph({ rankdir: direction, nodesep: 120, ranksep: 180 }); // Increased spacing
-
+  dagreGraph.setGraph({ 
+    rankdir: direction, 
+    nodesep: 120, 
+    ranksep: 500,  // Increase space between ranks to allow room for arrows
+    edgesep: 80,   // Give edges more space 
+  }); 
+  
   // Add nodes to dagre graph with their dimensions
   nodes.forEach((node) => {
-    dagreGraph.setNode(node.id, { width: 200, height: 80 }); // Larger node size
+    // Calculate width based on the term length
+    const label = node.data?.label || '';
+    const width = Math.max(estimateTextWidth(label), 150); // Minimum width of 150px
+    const height = 80; // Keep height fixed
+    
+    dagreGraph.setNode(node.id, { width, height });
   });
 
   // Add edges to dagre graph
@@ -60,6 +90,7 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'LR') => 
   // Get positions for nodes
   const layoutedNodes = nodes.map((node) => {
     const nodeWithPosition = dagreGraph.node(node.id);
+    const width = nodeWithPosition.width;
     
     return {
       ...node,
@@ -67,9 +98,10 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'LR') => 
       targetPosition: isHorizontal ? Position.Left : Position.Top,
       sourcePosition: isHorizontal ? Position.Right : Position.Bottom,
       position: {
-        x: nodeWithPosition.x - 100,
+        x: nodeWithPosition.x - width/2, // Center based on actual width
         y: nodeWithPosition.y - 40,
       },
+      width: width, // Store width for the node component
     };
   });
 
@@ -108,10 +140,27 @@ const WordNode = ({ data, selected }: { data: { label: string; summary: string }
         boxShadow: isHovered 
           ? `0 12px 24px ${COLORS.shadow}, 0 0 15px ${COLORS.nodeGlow}` 
           : `0 6px 12px ${COLORS.shadow}`,
-        minWidth: '190px',
+        width: 'auto', // Let width be determined by content
+        minWidth: '150px', 
         backdropFilter: 'blur(8px)',
+        zIndex: 0, // Ensure edges can render on top
       }}
     >
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="source"
+        className="w-3 h-3 bg-green-500"
+        style={{ opacity: 0.85, zIndex: 1 }}
+      />
+      <Handle
+        type="target"
+        position={Position.Left}
+        id="target"
+        className="w-3 h-3 bg-blue-500"
+        style={{ opacity: 0.85, zIndex: 1 }}
+      />
+      
       <div className="flex flex-col">
         <div className="font-medium text-base tracking-wide" style={{ color: selected ? '#fff' : COLORS.text }}>
           {data.label}
@@ -186,11 +235,11 @@ const RelationshipEdge = ({
         style={{
           ...style, 
           stroke: COLORS.accent,
-          strokeWidth: isHovered ? 3 : 1.5,
-          strokeDasharray: isHovered ? "none" : "5,5",
+          strokeWidth: isHovered ? 4 : 2.5,
+          strokeDasharray: isHovered ? "none" : "8,4",
           transition: 'all 0.3s ease',
           cursor: 'pointer',
-          opacity: isHovered ? 0.9 : 0.75,
+          opacity: isHovered ? 1 : 0.85,
         }}
         className="react-flow__edge-path"
         d={edgePath}
@@ -387,21 +436,35 @@ const WordGraph = () => {
 
       const data = await response.json();
       
+      // Debug the edges data coming from backend
+      console.log("Received edges from backend:", data.edges);
+      
       // Process the edges to add the custom type
       const processedEdges = data.edges.map((edge: Edge) => ({
         ...edge,
-        type: 'relationship',
+        //type: 'relationship', // Always use our custom relationship type
+        // Remove any existing type property that might conflict
+        animated: true,
         markerEnd: {
           type: MarkerType.ArrowClosed,
-          width: 12,
-          height: 12,
+          width: 14,
+          height: 14, 
           color: COLORS.accent,
-          },
-          style: {
-            strokeWidth: 1.5,
-            stroke: COLORS.accent,
-          },
+        },
+        style: {
+          strokeWidth: 5, 
+          stroke: COLORS.accent,
+          opacity: 0.85,
+          strokeDasharray: '8,8',
+        },
+        // Adjust how edges connect to nodes
+        targetHandle: 'target',
+        sourceHandle: 'source',
+        // Ensure there's space at the end for the arrow
+        targetDistance: 10,
       }));
+      
+      console.log("Processed edges:", processedEdges);
       
       // Apply dagre layout instead of circular layout
       const result = getLayoutedElements(
@@ -409,6 +472,8 @@ const WordGraph = () => {
         processedEdges,
         'LR' // Left to right direction
       );
+      
+      console.log("Final edges after layout:", result.layoutedEdges);
       
       setNodes(result.layoutedNodes);
       setEdges(result.layoutedEdges);
@@ -620,7 +685,7 @@ const WordGraph = () => {
       <DetailPanel node={selectedNode} onClose={() => setSelectedNode(null)} />
       
       <div 
-        className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-10 p-5 rounded-xl shadow-md" 
+        className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-10 px-5 py-3 rounded-xl shadow-md" 
         style={{ 
           background: 'rgba(245, 240, 225, 0.95)',
           borderLeft: `3px solid ${COLORS.primary}`,
@@ -630,15 +695,13 @@ const WordGraph = () => {
         }}
       >
         <div className="flex items-center">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3 flex-shrink-0" style={{ color: COLORS.accent }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-3 flex-shrink-0" style={{ color: COLORS.accent }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <div>
-            <p style={{ color: COLORS.text, fontSize: '14px', fontWeight: 500 }}>
-              Click on a node to explore details
-              <span className="block mt-1 text-xs opacity-70">Hover over connections to see relationships between concepts</span>
-            </p>
-          </div>
+          <p style={{ color: COLORS.text, fontSize: '13px', fontWeight: 500 }}>
+            Click on a node to explore details
+            <span className="inline-block ml-2 text-xs opacity-70">(hover for relationships)</span>
+          </p>
         </div>
       </div>
     </div>
