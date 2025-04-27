@@ -36,7 +36,7 @@ const COLORS = {
 };
 
 // Helper function to estimate text width
-const estimateTextWidth = (text: string, fontSize = 16, fontWeight = 500): number => {
+const estimateTextWidth = (text: string, fontSize = 16): number => {
   // A rough estimate: average char is ~0.6em wide, for a medium weight font
   // Use multipliers for different characters
   const charWidths: {[key: string]: number} = {
