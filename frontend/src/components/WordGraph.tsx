@@ -16,6 +16,7 @@ import 'reactflow/dist/style.css';
 import dagre from 'dagre';
 
 const BACKEND_HOST = "http://localhost:8000";
+// const BACKEND_HOST = process.env.BACKEND_HOST || "http://localhost:8000";
 
 // Helper function to create a dagre graph and position nodes
 const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'LR') => {

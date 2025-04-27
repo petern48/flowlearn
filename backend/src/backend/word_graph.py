@@ -66,10 +66,10 @@ def generate_word_graph():
 
         "related_concepts" is like "next_stage." It should represent nodes where the student can perform after learning the current node (forming a directed edge).
         The values of these should EXACTLY match a corresponding "task" value in another node.
-        Everything should eventually lead to one final node, indicating the goal.
 
-        Requirements of the graph: All nodes should be connected. There should be one final node as the goal.
+        Requirements of the graph: All nodes must be connected. All nodes must eventually lead to one final node, indicating the goal.
         When there are multiple ways to do something, indicate so by making the paths diverage, to form a DAG that's not a straight line.
+        Prefer to avoid just a single straight line of nodes when possible.
 
         Here is the problem:
         {topic}

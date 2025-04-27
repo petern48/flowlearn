@@ -1,3 +1,9 @@
+Required env vars:
+- GEMINI_API_KEY
+- GOOGLE_API_KEY
+- ARYN_API_KEY
+- BACKEND_HOST (defaults to "http://localhost:8000")
+
 Current Overall Workflow
 
 User Interface (Frontend)
