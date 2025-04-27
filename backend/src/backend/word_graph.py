@@ -48,17 +48,18 @@ def generate_word_graph():
 
         prompt = f"""
         Pretend you are a teacher, trying to walk a student through what to learn to approach a problem.
-        Create a list of execution tasks ("nodes") that the student should learn to eventually solve the problem.
+        Create a list of execution tasks ("nodes"), concepts that the student should learn to eventually solve the problem.
+        These "node" "terms" should be concepts, not actions.
 
         This should generate a dependency graph of execution stages. Format the response as a JSON object with the following structure:
 
         {{
             "words": [
                 {{
-                    "term": "taskName",
+                    "term": "conceptName",
                     "summary": "brief summary",
                     "description" "description of the task",
-                    "related_concepts": ["next_task_1", "next_task_2"],
+                    "related_concepts": ["concept1", "concept2"],
                     "examples": ["example1", "example2"]
                 }}
             ]
