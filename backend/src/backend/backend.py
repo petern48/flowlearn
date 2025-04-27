@@ -10,7 +10,7 @@ app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
 # Configure your LLM provider
-genai.configure(api_key=os.environ.get("AIzaSyDhir02NpWjE4LcokbTwYjV8w2XsvxCK4s"))
+genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
 
 # Types for our graph data
 class Node:
