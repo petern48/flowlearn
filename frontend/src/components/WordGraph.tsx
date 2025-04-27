@@ -146,19 +146,21 @@ const WordNode = ({ data, selected }: { data: { label: string; summary: string }
         zIndex: 0, // Ensure edges can render on top
       }}
     >
-
-      {/* Add Handle components */}
       <Handle
         type="source"
         position={Position.Right}
+        id="source"
         className="w-3 h-3 bg-green-500"
+        style={{ opacity: 0.85, zIndex: 1 }}
       />
       <Handle
         type="target"
         position={Position.Left}
+        id="target"
         className="w-3 h-3 bg-blue-500"
+        style={{ opacity: 0.85, zIndex: 1 }}
       />
-
+      
       <div className="flex flex-col">
         <div className="font-medium text-base tracking-wide" style={{ color: selected ? '#fff' : COLORS.text }}>
           {data.label}
