@@ -193,7 +193,8 @@ const WordGraph = () => {
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [topic, setTopic] = useState('Technology');
+  const [topic, setTopic] = useState('');
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
 
   const nodeTypes = {
     WordNode: WordNode,
@@ -203,21 +204,54 @@ const WordGraph = () => {
     'relationship': RelationshipEdge,
   };
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setUploadedFile(e.target.files[0]);
+    }
+  };
+
+  const handleFileDelete = () => {
+    setUploadedFile(null);
+    // Reset the file input
+    const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = '';
+    }
+  };
+
   const generateGraph = async () => {
     try {
       setLoading(true);
       setError(null);
+      
+      let response;
 
-      const response = await fetch(`${BACKEND_HOST}/api/word-graph/generate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          topic,
-          num_words: 5,
-        }),
-      });
+      if (uploadedFile) {
+        // Create a FormData object for file upload
+        const formData = new FormData();
+        formData.append('file', uploadedFile);
+        if (topic) {
+          formData.append('topic', topic);
+        }
+
+        // Send file to the file upload endpoint
+        response = await fetch(`${BACKEND_HOST}/api/word-graph/upload`, {
+          method: 'POST',
+          body: formData,
+        });
+      } else {
+        // Text-based topic query
+        response = await fetch(`${BACKEND_HOST}/api/word-graph/generate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            topic,
+            num_words: 5,
+          }),
+        });
+      }
 
       if (!response.ok) {
         throw new Error('Failed to generate word graph');
@@ -249,10 +283,6 @@ const WordGraph = () => {
     }
   };
 
-  useEffect(() => {
-    generateGraph();
-  }, []);
-
   const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
     setSelectedNode(node);
   }, []);
@@ -268,7 +298,7 @@ const WordGraph = () => {
         <div className="mb-4">
           <h3 className="text-lg font-bold text-gray-800 mb-2">Generate Word Graph</h3>
           <label htmlFor="topic" className="block text-sm font-medium text-gray-700 mb-1">
-            Topic
+            Topic {uploadedFile && <span className="text-gray-500 text-xs">(optional with attachment)</span>}
           </label>
           <input
             type="text"
@@ -276,9 +306,50 @@ const WordGraph = () => {
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            placeholder="Enter a topic"
+            placeholder={uploadedFile ? "Optional with attachment" : "Enter a topic"}
           />
         </div>
+        
+        {/* Upload Attachment Button */}
+        <div className="mb-4">
+          <label htmlFor="file-upload" className="w-full flex items-center justify-center px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 border border-gray-300 cursor-pointer">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+            </svg>
+            Upload Attachment
+          </label>
+          <input 
+            id="file-upload" 
+            type="file" 
+            className="hidden" 
+            accept=".pdf,image/*"
+            onChange={handleFileUpload}
+          />
+        </div>
+        
+        {/* Display uploaded file */}
+        {uploadedFile && (
+          <div className="mb-4">
+            <div className="bg-gray-100 rounded-md p-2 flex items-center justify-between">
+              <div className="flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span className="text-sm text-gray-700 truncate max-w-[200px]">{uploadedFile.name}</span>
+              </div>
+              <button 
+                onClick={handleFileDelete}
+                className="text-red-500 hover:text-red-700"
+                aria-label="Remove file"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        )}
+        
         <button
           onClick={generateGraph}
           disabled={loading}
