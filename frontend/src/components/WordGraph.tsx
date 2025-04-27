@@ -7,6 +7,7 @@ import ReactFlow, {
   MiniMap,
   useNodesState,
   useEdgesState,
+  Handle,
   Position,
   EdgeLabelRenderer,
   getStraightPath,
@@ -91,6 +92,19 @@ const WordNode = ({ data, selected }: { data: { label: string; summary: string }
         boxShadow: isHovered ? '0 4px 12px rgba(0, 0, 0, 0.15)' : '0 2px 6px rgba(0, 0, 0, 0.1)',
       }}
     >
+
+      {/* Add Handle components */}
+      <Handle
+        type="source"
+        position={Position.Right}
+        className="w-3 h-3 bg-green-500"
+      />
+      <Handle
+        type="target"
+        position={Position.Left}
+        className="w-3 h-3 bg-blue-500"
+      />
+
       <div className="flex flex-col">
         <div className="font-bold">{data.label}</div>
         {isHovered && (
