@@ -19,6 +19,21 @@ import dagre from 'dagre';
 const BACKEND_HOST = "http://localhost:8000";
 // const BACKEND_HOST = process.env.BACKEND_HOST || "http://localhost:8000";
 
+// Color palette
+const COLORS = {
+  primary: '#94c5cc', // Light blue
+  secondary: '#f5f0e1', // Beige
+  accent: '#7a9e9f', // Muted teal
+  text: '#4a4a4a', // Dark gray
+  lightText: '#8a8a8a', // Medium gray
+  border: '#e0d8c0', // Light beige
+  highlight: '#a7c4bc', // Sage green
+  background: '#faf7f0', // Off-white
+  shadow: 'rgba(0, 0, 0, 0.05)', // Subtle shadow
+  cardShadow: '0 8px 20px rgba(0, 0, 0, 0.06)',
+  nodeGlow: 'rgba(167, 196, 188, 0.4)',
+};
+
 // Helper function to create a dagre graph and position nodes
 const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'LR') => {
   const dagreGraph = new dagre.graphlib.Graph();
@@ -27,11 +42,11 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'LR') => 
   // Set direction for layout algorithm
   // LR = left to right, TB = top to bottom
   const isHorizontal = direction === 'LR';
-  dagreGraph.setGraph({ rankdir: direction });
+  dagreGraph.setGraph({ rankdir: direction, nodesep: 120, ranksep: 180 }); // Increased spacing
 
   // Add nodes to dagre graph with their dimensions
   nodes.forEach((node) => {
-    dagreGraph.setNode(node.id, { width: 172, height: 36 });
+    dagreGraph.setNode(node.id, { width: 200, height: 80 }); // Larger node size
   });
 
   // Add edges to dagre graph
@@ -52,8 +67,8 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'LR') => 
       targetPosition: isHorizontal ? Position.Left : Position.Top,
       sourcePosition: isHorizontal ? Position.Right : Position.Bottom,
       position: {
-        x: nodeWithPosition.x - 86,
-        y: nodeWithPosition.y - 18,
+        x: nodeWithPosition.x - 100,
+        y: nodeWithPosition.y - 40,
       },
     };
   });
@@ -82,20 +97,35 @@ const WordNode = ({ data, selected }: { data: { label: string; summary: string }
   
   return (
     <div 
-      className={`px-4 py-2 shadow-md rounded-md bg-white border-2 ${selected ? 'border-red-500' : isHovered ? 'border-green-500' : 'border-blue-500'} cursor-pointer hover:bg-blue-50 transition-colors`}
+      className="px-6 py-4 rounded-lg shadow-md transition-all duration-300"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       style={{
-        transform: isHovered ? 'scale(1.05)' : 'scale(1)',
-        transition: 'transform 0.2s ease-in-out',
-        boxShadow: isHovered ? '0 4px 12px rgba(0, 0, 0, 0.15)' : '0 2px 6px rgba(0, 0, 0, 0.1)',
+        background: selected ? COLORS.accent : isHovered ? COLORS.highlight : COLORS.secondary,
+        borderLeft: `5px solid ${selected ? '#6c8a8b' : isHovered ? COLORS.accent : COLORS.primary}`,
+        color: COLORS.text,
+        transform: isHovered ? 'translateY(-4px)' : 'translateY(0)',
+        boxShadow: isHovered 
+          ? `0 12px 24px ${COLORS.shadow}, 0 0 15px ${COLORS.nodeGlow}` 
+          : `0 6px 12px ${COLORS.shadow}`,
+        minWidth: '190px',
+        backdropFilter: 'blur(8px)',
       }}
     >
       <div className="flex flex-col">
-        <div className="font-bold">{data.label}</div>
-        {isHovered && (
-          <div className="text-xs text-gray-500 mt-1">{data.summary?.substring(0, 60)}...</div>
-        )}
+        <div className="font-medium text-base tracking-wide" style={{ color: selected ? '#fff' : COLORS.text }}>
+          {data.label}
+        </div>
+        <div 
+          className={`text-xs mt-2 leading-relaxed transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`} 
+          style={{ 
+            color: selected ? '#f0f0f0' : COLORS.lightText,
+            height: isHovered ? 'auto' : '0',
+            overflow: 'hidden'
+          }}
+        >
+          {data.summary?.substring(0, 75)}...
+        </div>
       </div>
     </div>
   );
@@ -155,8 +185,12 @@ const RelationshipEdge = ({
         id={id}
         style={{
           ...style, 
-          strokeWidth: 5,
+          stroke: COLORS.accent,
+          strokeWidth: isHovered ? 3 : 1.5,
+          strokeDasharray: isHovered ? "none" : "5,5",
+          transition: 'all 0.3s ease',
           cursor: 'pointer',
+          opacity: isHovered ? 0.9 : 0.75,
         }}
         className="react-flow__edge-path"
         d={edgePath}
@@ -168,15 +202,20 @@ const RelationshipEdge = ({
             style={{
               position: 'absolute',
               transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
-              background: 'white',
-              padding: '6px 10px',
-              borderRadius: '4px',
+              background: 'rgba(245, 240, 225, 0.95)',
+              color: COLORS.text,
+              padding: '10px 16px',
+              borderRadius: '8px',
               fontSize: '12px',
-              fontWeight: 'bold',
-              boxShadow: '0 0 10px rgba(0, 0, 0, 0.3)',
+              fontWeight: '500',
+              letterSpacing: '0.2px',
+              boxShadow: COLORS.cardShadow,
               pointerEvents: 'none',
               zIndex: 1000,
-              border: '1px solid #3b82f6',
+              border: `1px solid ${COLORS.border}`,
+              maxWidth: '220px',
+              backdropFilter: 'blur(4px)',
+              animation: 'fadeIn 0.2s ease-out',
             }}
             className="nodrag nopan"
           >
@@ -193,30 +232,55 @@ const DetailPanel = ({ node, onClose }: { node: Node | null; onClose: () => void
   if (!node) return null;
 
   return (
-    <div className="absolute right-4 top-4 w-80 bg-white rounded-lg shadow-lg p-4 border border-gray-200">
-      <div className="flex justify-between items-start mb-4">
-        <h2 className="text-xl font-bold text-gray-800">{node.data.label}</h2>
+    <div 
+      className="absolute right-6 top-6 w-96 rounded-lg p-7 border transition-all duration-300" 
+      style={{ 
+        background: 'rgba(245, 240, 225, 0.95)',
+        borderColor: COLORS.border,
+        color: COLORS.text,
+        boxShadow: COLORS.cardShadow,
+        backdropFilter: 'blur(10px)',
+        animation: 'slideIn 0.3s ease-out',
+      }}
+    >
+      <div className="flex justify-between items-start mb-5">
+        <h2 className="text-xl font-bold tracking-tight" style={{ color: COLORS.accent }}>{node.data.label}</h2>
         <button
           onClick={onClose}
-          className="text-gray-500 hover:text-gray-700"
+          className="text-gray-400 hover:text-gray-600 rounded-full h-8 w-8 flex items-center justify-center transition-colors duration-200"
+          style={{ background: COLORS.background }}
         >
           ✕
         </button>
       </div>
       
-      <div className="space-y-4">
+      <div className="space-y-6">
         <div>
-          <h3 className="font-semibold text-gray-700 mb-1">Description</h3>
-          <p className="text-gray-600 text-sm">{node.data.description}</p>
+          <h3 className="font-semibold mb-3 flex items-center" style={{ color: COLORS.accent }}>
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Description
+          </h3>
+          <p className="text-sm leading-relaxed" style={{ lineHeight: '1.6' }}>{node.data.description}</p>
         </div>
         
         <div>
-          <h3 className="font-semibold text-gray-700 mb-1">Related Topics</h3>
+          <h3 className="font-semibold mb-3 flex items-center" style={{ color: COLORS.accent }}>
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+            </svg>
+            Related Topics
+          </h3>
           <div className="flex flex-wrap gap-2">
             {node.data.relatedTopics.map((topic: string, index: number) => (
               <span
                 key={index}
-                className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
+                className="px-3 py-1 rounded-full text-xs transition-transform duration-200 hover:scale-105"
+                style={{ 
+                  background: COLORS.primary, 
+                  color: COLORS.text,
+                }}
               >
                 {topic}
               </span>
@@ -225,10 +289,24 @@ const DetailPanel = ({ node, onClose }: { node: Node | null; onClose: () => void
         </div>
         
         <div>
-          <h3 className="font-semibold text-gray-700 mb-1">Examples</h3>
-          <ul className="list-disc list-inside text-gray-600 text-sm">
+          <h3 className="font-semibold mb-3 flex items-center" style={{ color: COLORS.accent }}>
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+            </svg>
+            Examples
+          </h3>
+          <ul className="list-none text-sm space-y-2">
             {node.data.examples.map((example: string, index: number) => (
-              <li key={index}>{example}</li>
+              <li key={index} className="leading-relaxed flex items-start">
+                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full mr-2 flex-shrink-0 text-xs" style={{ 
+                  background: COLORS.highlight, 
+                  color: COLORS.text,
+                  textAlign: 'center',
+                }}>
+                  {index + 1}
+                </span>
+                <span>{example}</span>
+              </li>
             ))}
           </ul>
         </div>
@@ -253,14 +331,6 @@ const WordGraph = () => {
   const [error, setError] = useState<string | null>(null);
   const [topic, setTopic] = useState('');
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-
-  // const nodeTypes = {
-  //   WordNode: WordNode,
-  // };
-  
-  // const edgeTypes = {
-  //   'relationship': RelationshipEdge,
-  // };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -309,7 +379,6 @@ const WordGraph = () => {
             num_words: 5,
           }),
         });
-        // console.log("response\n", response)
       }
 
       if (!response.ok) {
@@ -321,15 +390,16 @@ const WordGraph = () => {
       // Process the edges to add the custom type
       const processedEdges = data.edges.map((edge: Edge) => ({
         ...edge,
+        type: 'relationship',
         markerEnd: {
           type: MarkerType.ArrowClosed,
-          width: 20,
-          height: 20,
-          color: '#FF0072',
+          width: 12,
+          height: 12,
+          color: COLORS.accent,
           },
           style: {
-            strokeWidth: 2,
-            stroke: '#FF0072',
+            strokeWidth: 1.5,
+            stroke: COLORS.accent,
           },
       }));
       
@@ -349,10 +419,8 @@ const WordGraph = () => {
     }
   };
 
-  // const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
   const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
     setSelectedNode(node);
-    throw new Error("end it");
   }, []);
 
   const onBackgroundClick = useCallback(() => {
@@ -360,57 +428,122 @@ const WordGraph = () => {
   }, []);
 
   return (
-    <div className="w-full h-screen relative">
-      {/* Topic Input Panel - With higher z-index and more noticeable styling */}
-      <div className="absolute top-4 left-4 z-50 bg-white p-4 rounded-lg shadow-xl border-2 border-blue-300">
-        <div className="mb-4">
-          <h3 className="text-lg font-bold text-gray-800 mb-2">Generate Learning Plan</h3>
-          <label htmlFor="topic" className="block text-sm font-medium text-gray-700 mb-1">
-            Topic {uploadedFile && <span className="text-gray-500 text-xs">(optional with attachment)</span>}
-          </label>
-          <input
-            type="text"
-            id="topic"
-            value={topic}
-            onChange={(e) => setTopic(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            placeholder={uploadedFile ? "Optional with attachment" : "Enter a topic"}
-          />
-        </div>
+    <div className="w-full h-screen relative font-sans" style={{ background: COLORS.background }}>
+      {/* Global CSS for animations - using style tag without jsx/global attributes */}
+      <style>
+        {`
+        @keyframes slideIn {
+          from { opacity: 0; transform: translateX(20px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
         
-        {/* Upload Attachment Button */}
-        <div className="mb-4">
-          <label htmlFor="file-upload" className="w-full flex items-center justify-center px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 border border-gray-300 cursor-pointer">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-            </svg>
-            Upload Attachment
-          </label>
-          <input 
-            id="file-upload" 
-            type="file" 
-            className="hidden" 
-            accept=".pdf,image/*"
-            onChange={handleFileUpload}
-          />
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        
+        @keyframes pulse {
+          0% { box-shadow: 0 0 0 0 rgba(122, 158, 159, 0.4); }
+          70% { box-shadow: 0 0 0 10px rgba(122, 158, 159, 0); }
+          100% { box-shadow: 0 0 0 0 rgba(122, 158, 159, 0); }
+        }
+        
+        .pulse {
+          animation: pulse 2s infinite;
+        }
+        `}
+      </style>
+
+      {/* Topic Input Panel */}
+      <div 
+        className="absolute top-6 left-6 z-50 p-8 rounded-xl shadow-md" 
+        style={{ 
+          background: 'rgba(245, 240, 225, 0.95)',
+          borderLeft: `4px solid ${COLORS.accent}`,
+          maxWidth: '360px',
+          boxShadow: COLORS.cardShadow,
+          backdropFilter: 'blur(10px)',
+        }}
+      >
+        <div className="mb-6">
+          <h3 className="text-xl font-bold mb-6 text-center tracking-tight" style={{ color: COLORS.accent }}>learning journey</h3>
+          
+          <div className="space-y-5">
+            <div>
+              <label htmlFor="topic" className="block text-sm mb-2 font-medium" style={{ color: COLORS.text }}>
+                Topic {uploadedFile && <span className="text-xs opacity-70 ml-1">(optional with attachment)</span>}
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  id="topic"
+                  value={topic}
+                  onChange={(e) => setTopic(e.target.value)}
+                  className="w-full px-4 py-3 rounded-lg focus:outline-none focus:ring-2 transition-all duration-300"
+                  style={{ 
+                    border: `1px solid ${COLORS.border}`,
+                    background: COLORS.background,
+                    color: COLORS.text,
+                    boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.05)',
+                  }}
+                  placeholder={uploadedFile ? "Optional with attachment" : "Enter a topic"}
+                />
+                {topic && (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 absolute right-3 top-1/2 transform -translate-y-1/2" 
+                    style={{ color: COLORS.accent }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                )}
+              </div>
+            </div>
+        
+            {/* Upload Attachment Button */}
+            <div>
+              <label 
+                htmlFor="file-upload" 
+                className="w-full flex items-center justify-center px-4 py-3 rounded-lg cursor-pointer transition-all duration-200 hover:bg-opacity-90"
+                style={{
+                  background: COLORS.background,
+                  color: COLORS.text,
+                  border: `1px solid ${COLORS.border}`,
+                }}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke={COLORS.accent}>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                </svg>
+                Upload Attachment
+              </label>
+              <input 
+                id="file-upload" 
+                type="file" 
+                className="hidden" 
+                accept=".pdf,image/*"
+                onChange={handleFileUpload}
+              />
+            </div>
+          </div>
         </div>
         
         {/* Display uploaded file */}
         {uploadedFile && (
-          <div className="mb-4">
-            <div className="bg-gray-100 rounded-md p-2 flex items-center justify-between">
+          <div className="mb-6">
+            <div 
+              className="rounded-lg p-3 flex items-center justify-between"
+              style={{ background: COLORS.background }}
+            >
               <div className="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke={COLORS.accent}>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                <span className="text-sm text-gray-700 truncate max-w-[200px]">{uploadedFile.name}</span>
+                <span className="text-sm truncate max-w-[200px]" style={{ color: COLORS.text }}>{uploadedFile.name}</span>
               </div>
               <button 
                 onClick={handleFileDelete}
-                className="text-red-500 hover:text-red-700"
+                className="text-red-400 hover:text-red-600 rounded-full h-6 w-6 flex items-center justify-center transition-colors duration-200"
+                style={{ background: 'rgba(255,255,255,0.5)' }}
                 aria-label="Remove file"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
@@ -421,13 +554,31 @@ const WordGraph = () => {
         <button
           onClick={generateGraph}
           disabled={loading}
-          className="w-full px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-blue-300 font-medium"
+          className={`w-full px-4 py-3 rounded-lg font-medium transition-all duration-300 ${!topic && !uploadedFile ? 'opacity-70' : 'pulse'}`}
+          style={{
+            background: loading ? `${COLORS.accent}90` : COLORS.accent,
+            color: '#fff',
+            boxShadow: '0 2px 10px rgba(122, 158, 159, 0.2)',
+          }}
         >
-          {loading ? 'Generating...' : 'Generate Graph'}
+          {loading ? (
+            <div className="flex items-center justify-center">
+              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Creating your journey...
+            </div>
+          ) : 'Generate Knowledge Map'}
         </button>
         {error && (
-          <div className="mt-2 text-red-500 text-sm">
-            {error}
+          <div className="mt-4 text-red-500 text-sm bg-red-50 p-3 rounded-lg border border-red-100">
+            <div className="flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              {error}
+            </div>
           </div>
         )}
       </div>
@@ -443,25 +594,52 @@ const WordGraph = () => {
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           fitView
-          fitViewOptions={{ padding: 0.2 }}
+          fitViewOptions={{ padding: 0.3 }}
           attributionPosition="bottom-right"
         >
-          <Controls />
-          <MiniMap 
-            nodeStrokeColor="#3b82f6"
-            nodeColor="#3b82f6"
+          <Controls 
+            style={{ 
+              backgroundColor: COLORS.secondary,
+              borderRadius: '10px',
+              border: `1px solid ${COLORS.border}`,
+            }} 
           />
-          <Background color="#aaa" gap={16} />
+          <MiniMap 
+            nodeStrokeColor={COLORS.accent}
+            nodeColor={COLORS.primary}
+            maskColor={`${COLORS.background}80`}
+            style={{
+              borderRadius: '8px',
+              border: `1px solid ${COLORS.border}`,
+            }}
+          />
+          <Background color={COLORS.border} gap={20} size={1} />
         </ReactFlow>
       </div>
       
       <DetailPanel node={selectedNode} onClose={() => setSelectedNode(null)} />
       
-      <div className="absolute bottom-4 left-4 z-10 bg-white p-3 rounded-lg shadow-lg text-sm">
-        <p className="text-gray-600">
-          {/* <strong>Hover over connections</strong> to see relationships between concepts. */}
-          <strong>Click on a node. To learn about that task</strong>
-        </p>
+      <div 
+        className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-10 p-5 rounded-xl shadow-md" 
+        style={{ 
+          background: 'rgba(245, 240, 225, 0.95)',
+          borderLeft: `3px solid ${COLORS.primary}`,
+          maxWidth: '380px',
+          backdropFilter: 'blur(10px)',
+          boxShadow: COLORS.cardShadow,
+        }}
+      >
+        <div className="flex items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3 flex-shrink-0" style={{ color: COLORS.accent }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <div>
+            <p style={{ color: COLORS.text, fontSize: '14px', fontWeight: 500 }}>
+              Click on a node to explore details
+              <span className="block mt-1 text-xs opacity-70">Hover over connections to see relationships between concepts</span>
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );
