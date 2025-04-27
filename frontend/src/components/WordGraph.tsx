@@ -37,8 +37,7 @@ const COLORS = {
 
 // Helper function to estimate text width
 const estimateTextWidth = (text: string, fontSize = 16, fontWeight = 500): number => {
-  // A rough estimate: average char is ~0.6em wide, for a medium weight font
-  // Use multipliers for different characters
+  // A more precise estimate: adjust character widths based on font
   const charWidths: {[key: string]: number} = {
     'i': 0.3, 'l': 0.3, 'I': 0.3, 'j': 0.35, 'f': 0.35, 't': 0.4, 'r': 0.4,
     'm': 1.0, 'w': 1.0, 'M': 1.1, 'W': 1.1,
@@ -50,8 +49,8 @@ const estimateTextWidth = (text: string, fontSize = 16, fontWeight = 500): numbe
     width += (charWidths[char] || 0.6);
   }
   
-  // Convert em to pixels based on font size and add padding
-  return width * fontSize + 60; // Add fixed padding for node
+  // Convert em to pixels based on font size and add minimal padding
+  return width * fontSize + 36; // Minimal horizontal padding (18px on each side)
 };
 
 // Helper function to create a dagre graph and position nodes
@@ -64,17 +63,18 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'LR') => 
   const isHorizontal = direction === 'LR';
   dagreGraph.setGraph({ 
     rankdir: direction, 
-    nodesep: 120, 
-    ranksep: 500,  // Increase space between ranks to allow room for arrows
-    edgesep: 80,   // Give edges more space 
+    nodesep: 60,       // Reduced from 120
+    ranksep: 200,      // Reduced from 500
+    edgesep: 40,       // Reduced from 80
+    ranker: 'network-simplex', // More compact algorithm
   }); 
   
   // Add nodes to dagre graph with their dimensions
   nodes.forEach((node) => {
     // Calculate width based on the term length
     const label = node.data?.label || '';
-    const width = Math.max(estimateTextWidth(label), 150); // Minimum width of 150px
-    const height = 80; // Keep height fixed
+    const width = Math.max(estimateTextWidth(label), 100); // Minimum width of 100px
+    const height = 50; // Fixed compact height
     
     dagreGraph.setNode(node.id, { width, height });
   });
@@ -129,19 +129,21 @@ const WordNode = ({ data, selected }: { data: { label: string; summary: string }
   
   return (
     <div 
-      className="px-6 py-4 rounded-lg shadow-md transition-all duration-300"
+      className="py-3 rounded-lg shadow-md transition-all duration-300 text-center"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       style={{
         background: selected ? COLORS.accent : isHovered ? COLORS.highlight : COLORS.secondary,
-        borderLeft: `5px solid ${selected ? '#6c8a8b' : isHovered ? COLORS.accent : COLORS.primary}`,
+        borderLeft: `4px solid ${selected ? '#6c8a8b' : isHovered ? COLORS.accent : COLORS.primary}`,
         color: COLORS.text,
         transform: isHovered ? 'translateY(-4px)' : 'translateY(0)',
         boxShadow: isHovered 
           ? `0 12px 24px ${COLORS.shadow}, 0 0 15px ${COLORS.nodeGlow}` 
           : `0 6px 12px ${COLORS.shadow}`,
         width: 'auto', // Let width be determined by content
-        minWidth: '150px', 
+        minWidth: 'min-content', 
+        paddingLeft: '16px',
+        paddingRight: '16px',
         backdropFilter: 'blur(8px)',
         zIndex: 0, // Ensure edges can render on top
       }}
@@ -161,20 +163,21 @@ const WordNode = ({ data, selected }: { data: { label: string; summary: string }
         style={{ opacity: 0.85, zIndex: 1 }}
       />
       
-      <div className="flex flex-col">
-        <div className="font-medium text-base tracking-wide" style={{ color: selected ? '#fff' : COLORS.text }}>
+      <div className="flex flex-col items-center">
+        <div className="font-medium text-base tracking-wide text-center whitespace-nowrap" style={{ color: selected ? '#fff' : COLORS.text }}>
           {data.label}
         </div>
-        <div 
-          className={`text-xs mt-2 leading-relaxed transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`} 
-          style={{ 
-            color: selected ? '#f0f0f0' : COLORS.lightText,
-            height: isHovered ? 'auto' : '0',
-            overflow: 'hidden'
-          }}
-        >
-          {data.summary?.substring(0, 75)}...
-        </div>
+        {isHovered && (
+          <div 
+            className="text-xs mt-2 leading-relaxed transition-opacity duration-300 opacity-100"
+            style={{ 
+              color: selected ? '#f0f0f0' : COLORS.lightText,
+              maxWidth: '180px'
+            }}
+          >
+            {data.summary?.substring(0, 60)}...
+          </div>
+        )}
       </div>
     </div>
   );
@@ -531,12 +534,16 @@ const WordGraph = () => {
         }}
       >
         <div className="mb-6">
-          <h3 className="text-xl font-bold mb-6 text-center tracking-tight" style={{ color: COLORS.accent }}>learning journey</h3>
+          <h2 className="text-2xl font-bold mb-6 text-center tracking-tight" style={{ 
+            color: COLORS.accent,
+            letterSpacing: '0.05em',
+            fontSize: '28px',
+          }}> columbus.ai</h2>
           
           <div className="space-y-5">
             <div>
               <label htmlFor="topic" className="block text-sm mb-2 font-medium" style={{ color: COLORS.text }}>
-                Topic {uploadedFile && <span className="text-xs opacity-70 ml-1">(optional with attachment)</span>}
+                topic {uploadedFile && <span className="text-xs opacity-70 ml-1">(optional with attachment)</span>}
               </label>
               <div className="relative">
                 <input
@@ -551,7 +558,7 @@ const WordGraph = () => {
                     color: COLORS.text,
                     boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.05)',
                   }}
-                  placeholder={uploadedFile ? "Optional with attachment" : "Enter a topic"}
+                  placeholder={uploadedFile ? "optional with attachment" : "enter a topic"}
                 />
                 {topic && (
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 absolute right-3 top-1/2 transform -translate-y-1/2" 
@@ -659,7 +666,14 @@ const WordGraph = () => {
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           fitView
-          fitViewOptions={{ padding: 0.3 }}
+          fitViewOptions={{ 
+            padding: 0.3,  // Reduced from 0.3
+            includeHiddenNodes: true,
+            minZoom: 0.1,
+            maxZoom: 1.5,
+          }}
+          minZoom={0.1}
+          maxZoom={2}
           attributionPosition="bottom-right"
         >
           <Controls 
@@ -700,7 +714,7 @@ const WordGraph = () => {
           </svg>
           <p style={{ color: COLORS.text, fontSize: '13px', fontWeight: 500 }}>
             Click on a node to explore details
-            <span className="inline-block ml-2 text-xs opacity-70">(hover for relationships)</span>
+            <span className="inline-block ml-2 text-xs opacity-70">(hover for preview)</span>
           </p>
         </div>
       </div>
