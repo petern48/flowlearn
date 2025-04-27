@@ -46,6 +46,34 @@ def generate_word_graph():
             ]
         }}"""
 
+        prompt = f"""
+        Pretend you are a teacher, trying to walk a student through what to learn to approach a problem.
+        Create a list of execution tasks ("nodes") that the student should learn to eventually solve the problem.
+
+        This should generate a dependency graph of execution stages. Format the response as a JSON object with the following structure:
+
+        {{
+            "words": [
+                {{
+                    "term": "taskName",
+                    "summary": "brief summary",
+                    "description" "description of the task",
+                    "related_concepts": ["next_task_1", "next_task_2"],
+                    "examples": ["example1", "example2"]
+                }}
+            ]
+        }}
+
+        "related_concepts" is like "next_stage." It should represent nodes where the student can perform after learning the current node (forming a directed edge).
+        The values of these should EXACTLY match a corresponding "task" value in another node.
+        Everything should eventually lead to one final node, indicating the goal.
+
+        When there are multiple ways to do something, indicate so by making the paths diverage, to form a DAG that's not a straight line.
+
+        Here is the problem:
+        {topic}
+        """
+
         # Generate content using Gemini
         response = model.generate_content(prompt)
         if not response.text:
@@ -60,6 +88,7 @@ def generate_word_graph():
             
             words_data = json.loads(json_match.group())
             if not isinstance(words_data, dict) or 'words' not in words_data:
+                print("words_data", words_data)
                 raise ValueError("Invalid JSON structure")
         except json.JSONDecodeError as e:
             raise ValueError(f"Failed to parse JSON: {str(e)}")
@@ -121,6 +150,8 @@ def generate_word_graph():
                 'source': corr['source'],
                 'target': corr['target'],
                 'animated': True,
+                'type': 'smoothstep',  # didn't change it for some reason
+                'label': 'smoothstep',
                 'style': {'stroke': '#3b82f6', 'strokeWidth': 2},
                 'data': {'explanation': corr['explanation']}
             }

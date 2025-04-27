@@ -193,7 +193,7 @@ const WordGraph = () => {
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [topic, setTopic] = useState('');
+  const [topic, setTopic] = useState('Dynamic Programming Problem');
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
 
   const nodeTypes = {
