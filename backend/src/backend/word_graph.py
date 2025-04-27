@@ -165,7 +165,7 @@ def generate_word_graph():
                 'target': corr['target'],
                 'animated': True,
                 'type': 'smoothstep',
-                # 'style': {'stroke': '#3b82f6', 'strokeWidth': 2},
+                'style': {'stroke': '#3b82f6', 'strokeWidth': 2},
                 'data': {'explanation': corr['explanation']}
             }
             for i, corr in enumerate(correlations)
