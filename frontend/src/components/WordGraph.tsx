@@ -61,19 +61,19 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'LR') => 
 };
 
 // Custom node component
-const ExpandedNode = ({ data }: { data: { label: string; summary: string; description: string; relatedTopics: string[]; examples: string[] } }) => {
-  return (
-    <div className="px-4 py-2 shadow-md rounded-md bg-white border-2 border-blue-500">
-      <div className="flex flex-col">
-        <div className="font-bold">{data.label}</div>
-        <div className="text-sm text-gray-500">{data.summary}</div>
-        <div className="text-sm text-gray-500">{data.description}</div>
-        <div className="text-sm text-gray-500">{data.relatedTopics.join(', ')}</div>
-        <div className="text-sm text-gray-500">{data.examples.join(', ')}</div>
-      </div>
-    </div>
-  );
-};
+// const ExpandedNode = ({ data }: { data: { label: string; summary: string; description: string; relatedTopics: string[]; examples: string[] } }) => {
+//   return (
+//     <div className="px-4 py-2 shadow-md rounded-md bg-white border-2 border-blue-500">
+//       <div className="flex flex-col">
+//         <div className="font-bold">{data.label}</div>
+//         <div className="text-sm text-gray-500">{data.summary}</div>
+//         <div className="text-sm text-gray-500">{data.description}</div>
+//         <div className="text-sm text-gray-500">{data.relatedTopics.join(', ')}</div>
+//         <div className="text-sm text-gray-500">{data.examples.join(', ')}</div>
+//       </div>
+//     </div>
+//   );
+// };
 
 // Custom node component with clickable styling
 const WordNode = ({ data, selected }: { data: { label: string; summary: string }; selected: boolean }) => {
@@ -103,8 +103,13 @@ const WordNode = ({ data, selected }: { data: { label: string; summary: string }
 // Custom edge component with hover tooltip
 const RelationshipEdge = ({ 
   id, 
-  source, 
-  target, 
+  // Below we ignore the linter which used to complain that we didn't use these fields, but we need to specify for them for interface
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  source,
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  target,
   sourceX, 
   sourceY, 
   targetX, 
@@ -334,7 +339,8 @@ const WordGraph = () => {
     }
   };
 
-  const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
+  // const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
+  const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
     setSelectedNode(node);
   }, []);
 
@@ -442,7 +448,8 @@ const WordGraph = () => {
       
       <div className="absolute bottom-4 left-4 z-10 bg-white p-3 rounded-lg shadow-lg text-sm">
         <p className="text-gray-600">
-          <strong>Hover over connections</strong> to see relationships between concepts.
+          {/* <strong>Hover over connections</strong> to see relationships between concepts. */}
+          <strong>Click on a node. To learn about that task</strong>
         </p>
       </div>
     </div>

@@ -1,4 +1,4 @@
-import React from 'react';
+// import React from 'react';
 import WordGraph from './components/WordGraph';
 
 const App = () => {
