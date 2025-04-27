@@ -48,6 +48,7 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'LR') => 
     
     return {
       ...node,
+      type: "WordNode",
       targetPosition: isHorizontal ? Position.Left : Position.Top,
       sourcePosition: isHorizontal ? Position.Right : Position.Bottom,
       position: {
@@ -236,22 +237,30 @@ const DetailPanel = ({ node, onClose }: { node: Node | null; onClose: () => void
   );
 };
 
+const nodeTypes = {
+  WordNode: WordNode,
+};
+
+const edgeTypes = {
+  'relationship': RelationshipEdge,
+};
+
 const WordGraph = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [topic, setTopic] = useState('Dynamic Programming Problem');
+  const [topic, setTopic] = useState('');
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
 
-  const nodeTypes = {
-    WordNode: WordNode,
-  };
+  // const nodeTypes = {
+  //   WordNode: WordNode,
+  // };
   
-  const edgeTypes = {
-    'relationship': RelationshipEdge,
-  };
+  // const edgeTypes = {
+  //   'relationship': RelationshipEdge,
+  // };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -300,6 +309,7 @@ const WordGraph = () => {
             num_words: 5,
           }),
         });
+        // console.log("response\n", response)
       }
 
       if (!response.ok) {
@@ -342,6 +352,7 @@ const WordGraph = () => {
   // const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
   const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
     setSelectedNode(node);
+    throw new Error("end it");
   }, []);
 
   const onBackgroundClick = useCallback(() => {
@@ -353,7 +364,7 @@ const WordGraph = () => {
       {/* Topic Input Panel - With higher z-index and more noticeable styling */}
       <div className="absolute top-4 left-4 z-50 bg-white p-4 rounded-lg shadow-xl border-2 border-blue-300">
         <div className="mb-4">
-          <h3 className="text-lg font-bold text-gray-800 mb-2">Generate Word Graph</h3>
+          <h3 className="text-lg font-bold text-gray-800 mb-2">Generate Learning Plan</h3>
           <label htmlFor="topic" className="block text-sm font-medium text-gray-700 mb-1">
             Topic {uploadedFile && <span className="text-gray-500 text-xs">(optional with attachment)</span>}
           </label>

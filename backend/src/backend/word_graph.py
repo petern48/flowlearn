@@ -72,6 +72,18 @@ def generate_word_graph():
         Prefer to avoid just a single straight line of nodes when possible.
         Try to target around 5-10 nodes for most goals.
 
+        Important Requirements:
+        1. Make sure it's a valid DAG (no cycles)
+        2. All nodes MUST be connected.
+        3. All nodes must eventually lead to one final node, indicating the goal.
+        4. There must be more than one path from start to finish (no single lines).
+        5. When there are multiple ways to do something, indicate so by making the paths diverage, to form a DAG that's not a straight line.
+        6. Node IDs should be unique strings
+        7. Every link's source and target must refer to existing node IDs
+        8. Generate between 5-8 nodes based on the complexity of the topic
+        9. Make sure the labels are descriptive and relevant to the topic
+        10. Each node should be connected to at least one other node
+
         Here is the problem:
         {topic}
         """
@@ -139,7 +151,7 @@ def generate_word_graph():
                     'examples': word['examples']
                 },
                 'position': {'x': i * 250, 'y': 0},
-                'type': 'wordNode',
+                # 'type': 'wordNode',
                 'sourcePosition': 'right',
                 'targetPosition': 'left'
             }
