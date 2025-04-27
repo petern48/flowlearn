@@ -538,7 +538,7 @@ const WordGraph = () => {
             color: COLORS.accent,
             letterSpacing: '0.05em',
             fontSize: '28px',
-          }}> columbus.ai</h2>
+          }}> flowlearn</h2>
           
           <div className="space-y-5">
             <div>
