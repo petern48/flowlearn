@@ -1,5 +1,6 @@
 ![image](https://github.com/user-attachments/assets/8f09f0a3-ef82-467b-8676-eb7f5f3c66b1)
 
+flowlearn uses LLMs to break down complex topics into structured learning plans, represented as graphs, to improve student learning and recall.
 
 Required env vars:
 - GEMINI_API_KEY
